@@ -1,6 +1,4 @@
 import sgMail from "@sendgrid/mail";
-import dotenv from "dotenv";
-dotenv.config();
 
 sgMail.setApiKey("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");
 
@@ -19,3 +17,4 @@ export const sendEmail = async (to, subject, text) => {
     throw new Error("Email could not be sent");
   }
 };
+
