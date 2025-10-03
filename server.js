@@ -1,23 +1,46 @@
-import sgMail from "@sendgrid/mail";
+import express from "express";
+import dotenv from "dotenv";
+import cors from "cors";
+import { sendWelcomeEmail } from "./email.js"; // Import the email function
 
-// sgMail.setApiKey("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");
-// sgMail.setApiKey("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");
-sgMail.setApiKey("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");
+dotenv.config();
+const app = express();
 
-export const sendEmail = async (to, subject, text) => {
-  try {
-    const msg = {
-      to,
-      from: "vigneshubi24@gmail.com",
-      subject,
-      text,
-    };
-    await sgMail.send(msg);
-    console.log(`✅ Email sent to ${to}`);
-  } catch (error) {
-    console.error("Error sending email:", error.response?.body || error.message);
-    throw new Error("Email could not be sent");
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// Main Welcome Email API Endpoint
+app.post("/api/welcome", async (req, res) => {
+  // Use destructuring to get email and name from the request body
+  const { email, name } = req.body;
+
+  if (!email || !name) {
+    return res
+      .status(400)
+      .json({ success: false, error: "Both 'email' and 'name' are required." });
   }
-};
 
+  try {
+    // Call the function to send the email
+    await sendWelcomeEmail(
+      email,
+      "🎉 Welcome to Student App - Your Account is Ready!",
+      name // Pass the name for personalization
+    );
 
+    res.json({ success: true, message: `Welcome email sent to ${email}!` });
+  } catch (err) {
+    // Catch and return the error from the email function
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Health check route for Render
+app.get("/", (req, res) => {
+  res.send("✅ SendGrid Email Service is running!");
+});
+
+// Start server
+const PORT = process.env.PORT || 10000; // Use port 10000 as shown in your logs
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
