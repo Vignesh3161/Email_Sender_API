@@ -1,59 +1,41 @@
 import express from "express";
 import dotenv from "dotenv";
-import { Resend } from "resend";
+import cors from "cors";
+import { sendEmail } from "./server.js";
 
 dotenv.config();
 const app = express();
 
-const resend = new Resend("re_ZoHiPVdy_6PSThv9a4aKj5pEJMXepajXt");
-
-// Parse JSON bodies
+// Middleware
+app.use(cors());
 app.use(express.json());
 
-// Route 1: Send Welcome Email (expects JSON with { "to": "email" })
-app.post("/welcome-json", async (req, res) => {
+// Welcome email API
+app.post("/welcome", async (req, res) => {
   const { to } = req.body;
 
   if (!to) {
-    return res.status(400).json({ error: "Email address is required in JSON body" });
+    return res.status(400).json({ success: false, error: "Email address is required" });
   }
 
   try {
-    const data = await resend.emails.send({
-      from: "onboarding@resend.dev", 
+    await sendEmail(
       to,
-      subject: "🎉 Welcome (JSON Route)!",
-      text: `Hello ${to},\n\nThis email was sent using the JSON route.\n\n🚀 Cheers!`,
-    });
+      "🎉 Welcome to Student App!",
+      `Hello ${to},\n\nWelcome aboard! We're excited to have you with us. 🚀\n\nCheers,\nStudent Project Team`
+    );
 
-    res.json({ success: true, message: "Email sent via JSON route!", data });
+    res.json({ success: true, message: "Welcome email sent!" });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// Route 2: Send Welcome Email (expects plain text body with just the email)
-app.use(express.text());
-app.post("/welcome-text", async (req, res) => {
-  const to = req.body?.trim();
-
-  if (!to) {
-    return res.status(400).json({ error: "Email address is required in text body" });
-  }
-
-  try {
-    const data = await resend.emails.send({
-      from: "no-reply@yourdomain.com", // must be verified in Resend
-      to,
-      subject: "🎉 Welcome (Text Route)!",
-      text: `Hello ${to},\n\nThis email was sent using the Text route.\n\n🚀 Cheers!`,
-    });
-
-    res.json({ success: true, message: "Email sent via Text route!", data });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
+// Health check route
+app.get("/", (req, res) => {
+  res.send("✅ SendGrid backend server is running!");
 });
 
 // Start server
-app.listen(5000, () => console.log("🚀 Server running on http://localhost:5000"));
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
